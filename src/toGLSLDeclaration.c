@@ -466,6 +466,31 @@ static void DeclareInput(
         {
             case INDEX_2D:
             {
+				if(psShader->eShaderType == HULL_SHADER)
+				{
+					if(iNumComponents == 1)
+					{
+						const uint32_t regNum =  psDecl->asOperands[0].ui32RegisterNumber;
+						const uint32_t arraySize = psDecl->asOperands[0].aui32ArraySizes[0];
+
+						psContext->psShader->abScalarInput[psDecl->asOperands[0].ui32RegisterNumber] = -1;
+
+						bformata(glsl, "%s %s %s %s [gl_MaxPatchVertices];\n", StorageQualifier, Precision, scalarType, InputName);
+
+						bformata(glsl, "%s1 Input%d;\n", vecType, psDecl->asOperands[0].ui32RegisterNumber);
+
+						psShader->aiInputDeclaredSize[psDecl->asOperands[0].ui32RegisterNumber] = arraySize;
+					}
+					else
+					{
+						bformata(glsl, "%s %s %s%d %s [gl_MaxPatchVertices];\n", StorageQualifier, Precision, vecType, iNumComponents, InputName);
+
+						bformata(glsl, "%s%d Input%d[gl_MaxPatchVertices];\n", vecType, iNumComponents, psDecl->asOperands[0].ui32RegisterNumber);
+
+						psShader->aiInputDeclaredSize[psDecl->asOperands[0].ui32RegisterNumber] = psDecl->asOperands[0].aui32ArraySizes[0];
+					}
+				}
+				else
                 if(iNumComponents == 1)
                 {
 				    const uint32_t regNum =  psDecl->asOperands[0].ui32RegisterNumber;
@@ -2533,6 +2558,7 @@ Would generate a vec2 and a vec3. We discard the second one making .z invalid!
 			}
 
 			GetConstantBufferFromBindingPoint(RGROUP_UAV, ui32BindingPoint, &psContext->psShader->sInfo, &psCBuf);
+			psCBuf->iUnsized = 1;
 
 			DeclareBufferVariable(psContext, ui32BindingPoint, psCBuf, &psDecl->asOperands[0], 
 				psDecl->sUAV.ui32GloballyCoherentAccess, RTYPE_UAV_RWSTRUCTURED, glsl);
@@ -2558,6 +2584,7 @@ Would generate a vec2 and a vec3. We discard the second one making .z invalid!
 			ConstantBuffer* psCBuf = NULL;
 
 			GetConstantBufferFromBindingPoint(RGROUP_TEXTURE, psDecl->asOperands[0].ui32RegisterNumber, &psContext->psShader->sInfo, &psCBuf);
+			psCBuf->iUnsized = 1;
 
 			DeclareBufferVariable(psContext, psDecl->asOperands[0].ui32RegisterNumber, psCBuf, &psDecl->asOperands[0], 
 				0, RTYPE_STRUCTURED, glsl);
